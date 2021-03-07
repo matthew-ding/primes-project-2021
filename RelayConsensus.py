@@ -46,7 +46,7 @@ def trimmed_mean(X, f):
 
 # random byzantine parameters
 def byzantine_function(x):
-    return random.randrange(-5.0 * x, 10.0 * x)
+    return random.randrange(-15.0 * x, 15.0 * x)
 
 
 # deviation of honest parameters
@@ -59,7 +59,7 @@ def getDeviation(nodeList, m, byzantine_set):
     return np.array(array).std()
 
 
-def broadcast(nodeList, m, adjList, byzantine_set):
+def broadcast(nodeList, m, adjList, byzantine_set, iters):
     tempNodeList = copy.deepcopy(nodeList)  # node list before broadcast starts
     for i in range(m):
         if i not in byzantine_set:  # byzantine nodes don't store other node's data
@@ -79,31 +79,34 @@ def broadcast(nodeList, m, adjList, byzantine_set):
 
 
 # Approximate Byzantine Consensus (relay version)
-def IABC(iters, nodeList, m, adjList, diameter, maxIter, byzantine_set, updateFreq):
+def IABC(iters, maxIter, updateFreq, accuracy, adjList, byzantine_set, m, diameter, nodeList):
     while True:
-        # neighbor aggregation
-        broadcast(nodeList, m, adjList, byzantine_set)
+        # broadcast step
+        broadcast(nodeList, m, adjList, byzantine_set, iters)
 
+        # aggregation step
         for i in range(m):
-            if iters >= diameter and iters % updateFreq == 0 and i not in byzantine_set:
+            if i not in byzantine_set:
                 theta = nodeList[i].parameterList
+                if iters >= diameter and iters % updateFreq == 0:
+                    parameterArray = []
+                    for j in theta:
+                        parameterArray.append(theta[j].getParams())
 
-                parameterArray = []
-                for j in theta:
-                    parameterArray.append(theta[j].getParams())
-
-                # Trimmed mean
-                theta[i] = Parameter(trimmed_mean(parameterArray, len(byzantine_set)), iters)
+                    # Trimmed mean
+                    theta[i] = Parameter(trimmed_mean(parameterArray, len(byzantine_set)), iters)
+                else:
+                    theta[i].iter = iters
 
         # print if update iteration
-        if iters % updateFreq == 0 and iters >= diameter:
-            print("Iteration " + str(iters))
+        # if iters % updateFreq == 0 and iters >= diameter:
+            # print("Iteration " + str(iters))
 
-            std = getDeviation(nodeList, m, byzantine_set)
-            print("Standard Deviation " + str(std))
+            # std = getDeviation(nodeList, m, byzantine_set)
+            # print("Standard Deviation " + str(std))
 
-            if std < 0.01:
-                break
+            # if std < accuracy:
+            #     break
 
             # printAll(nodeList, m, byzantine_set)
 
@@ -111,8 +114,9 @@ def IABC(iters, nodeList, m, adjList, diameter, maxIter, byzantine_set, updateFr
             break
 
         iters += 1
+        std = getDeviation(nodeList, m, byzantine_set)
 
-    return nodeList, iters
+    return iters, nodeList, m, byzantine_set, std
 
 
 def printAll(nodeList, m, byzantine_set):
@@ -121,24 +125,30 @@ def printAll(nodeList, m, byzantine_set):
             print("NODE: " + str(i))
             print(nodeList[i].getParams()[i].getParams())
 
-
-diameter = 10
-maxIter = 1000
-updateFreq = 1
-
+"""
 # Graph generation
-adjList, byzantine_set, m, target = graphGenerator.get_relay_graph(diameter)
+adjList, byzantine_set, m, diameter = graphGenerator.get_relay_graph(bsize)
 print("Graph Generated Successfully")
 
+# Node initialization
 nodeList = []  # list of all nodes
-
 for i in range(m):
     # parameter arrays
-    nodeList.append(Node(i, m, 1.0 * random.randrange(9, 110)))
-
+    nodeList.append(Node(i, m, 1.0 * random.randrange(-110, 110)))
+        
+        
+# hyperparameters
+bsize = 10
+maxIter = 1000
+updateFreq = 5
+accuracy = 0.000000001
 iters = 1
 
-g, iters = IABC(iters, nodeList, m, adjList, diameter, maxIter, byzantine_set, updateFreq)
+
+# driver function
+iters, finalNodeList, m, byzantine_set, std = IABC(iters, maxIter, updateFreq, accuracy)
 
 print("Converges in " + str(iters) + " iterations")
-printAll(g, m, byzantine_set)
+printAll(finalNodeList, m, byzantine_set)
+"""
+
