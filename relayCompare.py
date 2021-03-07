@@ -1,10 +1,11 @@
 import copy
 import random
 import RelayConsensus
-from graphGenerator import get_relay_graph
+import graphGenerator
 import matplotlib.pyplot as plt
 
 # hyperparameters
+hsize = 100
 bsize = 15
 maxIter = 200
 accuracy = 0.03
@@ -14,8 +15,11 @@ stdList = []
 freqList = []
 
 # Graph generation
-adjList, byzantine_set, m, diameter = get_relay_graph(bsize)
+adjList, byzantine_set, m, diameter, density = graphGenerator.get_random_graph(100)
 print("Graph Generated Successfully")
+print("Size: " + str(m))
+print("Diameter: " + str(diameter))
+print("Density: " + str(density))
 
 # Node initialization
 nodeList = []  # list of all nodes

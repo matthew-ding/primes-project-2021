@@ -127,7 +127,7 @@ def printAll(nodeList, m, byzantine_set):
 
 """
 # Graph generation
-adjList, byzantine_set, m, diameter = graphGenerator.get_relay_graph(bsize)
+adjList, byzantine_set, m, diameter = graphGenerator.get_linear_graph(bsize)
 print("Graph Generated Successfully")
 
 # Node initialization

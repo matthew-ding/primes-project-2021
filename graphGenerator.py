@@ -3,80 +3,67 @@ from networkx import *
 import matplotlib.pyplot as plt
 
 
-def get_adj_list():
-    byzantine_size = 3  # number of byzantine nodes
-    honest_size = 10  # number of honest nodes
+def get_random_graph(hsize):
+    # graph generation
+    honest_subgraph = erdos_renyi_graph(hsize, 0.01)
+    for i in range(hsize):
+        honest_subgraph.nodes[i]["type"] = 'honest'
+
+    # largest connected component
+    honest_subgraph = honest_subgraph.subgraph(max(nx.connected_components(honest_subgraph), key=len)).copy()
+    diameter = algorithms.distance_measures.diameter(honest_subgraph)
+    density = classes.function.density(honest_subgraph)
+    honest_size = len(honest_subgraph)
+
+    byzantine_size = (honest_size - 1) // 2  # number of byzantine nodes
+    honest_subgraph = convert_node_labels_to_integers(honest_subgraph, first_label=byzantine_size)
+
+    byzantine_subgraph = Graph()
+    # adding nodes
+    for i in range(byzantine_size):
+        byzantine_subgraph.add_node(i, type='byzantine')
+
     total_size = byzantine_size + honest_size
-    corruptList = []  # contains nodes that have majority byzantine neighbors
 
     byzantine_output = []
-
-    # graph generation
-    # honest graph is connected
-    while True:
-        honest_subgraph = erdos_renyi_graph(honest_size, 0.5)
-        if is_connected(honest_subgraph):
-            break
-    # byzantine graph is disconnected
-    while True:
-        byzantine_subgraph = erdos_renyi_graph(byzantine_size, 0.15)
-        if not is_connected(byzantine_subgraph):
-            break
-
-    colorList = []  # used for final graph coloring
-    # labeling nodes
-    for i in range(honest_size):
-        honest_subgraph.nodes[i]['byzantine'] = False
-        colorList.append('b')
-
     for i in range(byzantine_size):
-        byzantine_subgraph.nodes[i]['byzantine'] = True
-        colorList.append('r')
+        byzantine_output.append(i)
 
-    byzantine_subgraph = convert_node_labels_to_integers(byzantine_subgraph, first_label=honest_size
-                                                         , ordering='default', label_attribute=None)
+    G = compose(honest_subgraph, byzantine_subgraph)
 
-    # printing graphs
-    draw_networkx(honest_subgraph)
-    plt.savefig("honest.png")
-    plt.clf()
-    draw_networkx(byzantine_subgraph, node_color="r")
-    plt.savefig("byzantine.png")
-    plt.clf()
+    # byzantine connectivity
+    for i in range(byzantine_size):
+        for j in range(byzantine_size, byzantine_size + honest_size):
+            if random.random() < 0.8:
+                G.add_edge(i, j)
 
-    final_graph = compose(honest_subgraph, byzantine_subgraph)
-
-    for i in range(honest_size):
-        max_byzantine = len(list(honest_subgraph.neighbors(i))) // 2
-
-        if i in corruptList:
-            byzantine_num = random.randrange(max_byzantine + 1, int(1.5 * max_byzantine + 1) + 1)
+    # coloring graph
+    colorList = []
+    for node in G.nodes(data=True):
+        if node[1]["type"] == 'byzantine':
+            colorList.append("red")
         else:
-            byzantine_num = random.randrange(int(0.75 * max_byzantine), max_byzantine + 1)
+            colorList.append("blue")
 
-        entire_byzantine_set = list(byzantine_subgraph.nodes)
-        byzantine_set = random.sample(entire_byzantine_set, byzantine_num)
+    # drawing graph
+    draw_networkx(G, node_color=colorList)
+    plt.savefig("random_graph.png")
+    plt.clf()
 
-        for j in byzantine_set:
-            final_graph.add_edge(i, j)
-
-    draw_networkx(final_graph, node_color=colorList)
-    plt.savefig("final_graph.png")
-
+    # adjacency list generation
     adjList = {}
-
     for i in range(byzantine_size + honest_size):
-        adjList[i] = [n for n in final_graph.neighbors(i)]
+        adjList[i] = [n for n in G.neighbors(i)]
 
-        if final_graph.nodes[i]["byzantine"]:
-            byzantine_output.append(i)
+    print(diameter)
+    print(density)
 
-    return adjList, byzantine_output, total_size
+    return adjList, byzantine_output, total_size, diameter, density
 
 
-def get_relay_graph(bsize):
+def get_linear_graph(bsize):
     byzantine_size = bsize  # number of byzantine nodes
-    honest_size = 2*byzantine_size + 1  # number of honest nodes
+    honest_size = 2 * byzantine_size + 1  # number of honest nodes
     diameter = honest_size - 1
     total_size = byzantine_size + honest_size
 
@@ -100,20 +87,20 @@ def get_relay_graph(bsize):
         G.add_node(i, type='byzantine')
 
     for i in range(honest_size):
-        G.add_node(byzantine_size+i, type='honest')
+        G.add_node(byzantine_size + i, type='honest')
 
     # adding edges
     for i in range(byzantine_size):
-        for j in range(byzantine_size, byzantine_size+honest_size):
+        for j in range(byzantine_size, byzantine_size + honest_size):
             if random.random() < 0.8:
                 G.add_edge(i, j)
 
-    for i in range(honest_size-1):
-        G.add_edge(byzantine_size+i, byzantine_size+i+1)
+    for i in range(honest_size - 1):
+        G.add_edge(byzantine_size + i, byzantine_size + i + 1)
 
     # drawing graph
     draw_networkx(G, node_color=colorList)
-    plt.savefig("relay_graph.png")
+    plt.savefig("linear_graph.png")
     plt.clf()
 
     # adjacency list generation
@@ -122,6 +109,7 @@ def get_relay_graph(bsize):
     for i in range(byzantine_size + honest_size):
         adjList[i] = [n for n in G.neighbors(i)]
 
-    return adjList, byzantine_output, total_size, diameter
+    density = 2*honest_size/((honest_size-1)*honest_size)
 
-# get_relay_graph(4)
+    return adjList, byzantine_output, total_size, diameter, density
+
