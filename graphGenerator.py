@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 def get_random_graph(hsize):
     # graph generation
-    honest_subgraph = erdos_renyi_graph(hsize, 0.01)
+    honest_subgraph = erdos_renyi_graph(hsize, 0.005)
     for i in range(hsize):
         honest_subgraph.nodes[i]["type"] = 'honest'
 

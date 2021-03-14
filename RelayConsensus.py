@@ -1,5 +1,6 @@
 import copy
 import random
+from decimal import Decimal
 import numpy as np
 import graphGenerator
 
@@ -7,7 +8,7 @@ import graphGenerator
 class Node:
     def __init__(self, n, m, value):
         self.num = n
-        self.parameterList = {n: Parameter(value, 0.0)}
+        self.parameterList = {n: Parameter(Decimal(value), 0)}
         self.m = m
 
     def getParams(self):
@@ -40,13 +41,12 @@ def trimmed_mean(X, f):
     sorted_X = np.sort(X)
     size = len(sorted_X)
     sorted_X = sorted_X[f:size - f]
-
     return sum(sorted_X) / len(sorted_X)
 
 
 # random byzantine parameters
 def byzantine_function(x):
-    return random.randrange(-15.0 * x, 15.0 * x)
+    return Decimal(random.randrange(-15.0 * x-5, 15.0 * x))
 
 
 # deviation of honest parameters
@@ -65,7 +65,7 @@ def broadcast(nodeList, m, adjList, byzantine_set, iters):
         if i not in byzantine_set:  # byzantine nodes don't store other node's data
             for j in adjList[i]:
                 if j in byzantine_set:
-                    tempNodeList[j].parameterList[j] = Parameter(byzantine_function(i), iters - 1)
+                    tempNodeList[j].parameterList[j] = Parameter(byzantine_function(i+j-m//3), iters - 1)
 
                 tempNeighbor = tempNodeList[j].getParams()
                 currentParamList = nodeList[i].parameterList
@@ -82,6 +82,7 @@ def broadcast(nodeList, m, adjList, byzantine_set, iters):
 def IABC(iters, maxIter, updateFreq, accuracy, adjList, byzantine_set, m, diameter, nodeList):
     while True:
         # broadcast step
+        print("Iteration: " + str(iters))
         broadcast(nodeList, m, adjList, byzantine_set, iters)
 
         # aggregation step

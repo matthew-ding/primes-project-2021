@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # hyperparameters
 hsize = 100
 bsize = 15
-maxIter = 200
+maxIter = 300
 accuracy = 0.03
 iters = 1
 
@@ -15,7 +15,7 @@ stdList = []
 freqList = []
 
 # Graph generation
-adjList, byzantine_set, m, diameter, density = graphGenerator.get_random_graph(100)
+adjList, byzantine_set, m, diameter, density = graphGenerator.get_random_graph(200)
 print("Graph Generated Successfully")
 print("Size: " + str(m))
 print("Diameter: " + str(diameter))
@@ -27,7 +27,10 @@ for i in range(m):
     nodeList.append(RelayConsensus.Node(i, m, 1.0 * random.randrange(-110, 110)))
 
 
-for i in range(1, 2 * bsize + 5):
+for i in range(1, diameter+1):
+    print(" ")
+    print("Update Frequency: " + str(i))
+    print(" ")
     tempNodeList = copy.deepcopy(nodeList)
     updateFreq = i
 
@@ -42,8 +45,9 @@ for i in range(1, 2 * bsize + 5):
     print("Standard Deviation: " + str(std))
 
 plt.plot(freqList, stdList)
-plt.title('Relay Speed vs. Update Frequency')
+plt.title("Nodes: " + str(m) + ", " + "Diameter: " + str(diameter) + ", Density: " + str(density))
 plt.xlabel("Update Frequency")
 plt.ylabel('Standard Deviation')
 plt.yscale("log")
 plt.show()
+plt.savefig("figure2")
