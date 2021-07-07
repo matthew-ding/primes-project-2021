@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 def get_random_graph(hsize):
     # graph generation
-    honest_subgraph = erdos_renyi_graph(hsize, 0.005)
+    honest_subgraph = erdos_renyi_graph(hsize, 0.8)
     for i in range(hsize):
         honest_subgraph.nodes[i]["type"] = 'honest'
 
@@ -34,7 +34,7 @@ def get_random_graph(hsize):
     # byzantine connectivity
     for i in range(byzantine_size):
         for j in range(byzantine_size, byzantine_size + honest_size):
-            if random.random() < 0.8:
+            if random.random() < 0.9:
                 G.add_edge(i, j)
 
     # coloring graph
@@ -54,9 +54,6 @@ def get_random_graph(hsize):
     adjList = {}
     for i in range(byzantine_size + honest_size):
         adjList[i] = [n for n in G.neighbors(i)]
-
-    print(diameter)
-    print(density)
 
     return adjList, byzantine_output, total_size, diameter, density
 
